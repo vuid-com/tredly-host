@@ -87,6 +87,24 @@ e_header "Tredly-Host Installation"
 if [[ -z "${_configOptions[8]}" ]]; then
     e_note "Skipping Tredly-API"
 else
+    # Configure /etc/rc.conf
+    e_note "Configuring /etc/rc.conf"
+    _exitCode=0
+    rm /etc/rc.conf
+    _exitCode=$(( ${_exitCode} & $? ))
+    cp ${DIR}/os/rc.conf /etc/
+    _exitCode=$(( ${_exitCode} & $? ))
+    # change the network information in rc.conf
+    sed -i '' "s|ifconfig_bridge0=.*|ifconfig_bridge0=\"addm ${_configOptions[1]} up\"|g" "/etc/rc.conf"
+    _exitCode=$(( ${_exitCode} & $? ))
+    if [[ $? -eq 0 ]]; then
+        e_success "Success"
+    else
+        e_error "Failed"
+    fi
+    
+    ##########
+    
     # set up tredly api
     e_note "Configuring Tredly-API"
     _exitCode=1
@@ -154,24 +172,6 @@ _exitCode=$(( ${PIPESTATUS[0]} & $? ))
 pkg install -y unbound | tee -a "${LOGFILE}"
 _exitCode=$(( ${PIPESTATUS[0]} & $? ))
 if [[ ${_exitCode} -eq 0 ]]; then
-    e_success "Success"
-else
-    e_error "Failed"
-fi
-
-##########
-
-# Configure /etc/rc.conf
-e_note "Configuring /etc/rc.conf"
-_exitCode=0
-rm /etc/rc.conf
-_exitCode=$(( ${_exitCode} & $? ))
-cp ${DIR}/os/rc.conf /etc/
-_exitCode=$(( ${_exitCode} & $? ))
-# change the network information in rc.conf
-sed -i '' "s|ifconfig_bridge0=.*|ifconfig_bridge0=\"addm ${_configOptions[1]} up\"|g" "/etc/rc.conf"
-_exitCode=$(( ${_exitCode} & $? ))
-if [[ $? -eq 0 ]]; then
     e_success "Success"
 else
     e_error "Failed"
