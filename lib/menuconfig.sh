@@ -23,15 +23,6 @@ function tredlyHostMenuConfig() {
             echo -e "3.^External Gateway^${_configOptions[3]}"
             echo -e "4.^Hostname^${_configOptions[4]}"
             echo -e "5.^Container Subnet^${_configOptions[5]}"
-            echo -e "6.^Tredly-Build Repository^${_configOptions[6]}"
-            echo -e "7.^Tredly-Build Branch^${_configOptions[7]}"
-            echo -e "8.^Tredly-API Repository^${_configOptions[8]}"
-            echo -e "9.^Tredly-API Branch^${_configOptions[9]}"
-            
-            # only allow user to change this option if the source actually exists
-            if [[ "${_sourceExists}" == "true" ]]; then
-                echo -e "10.^Download Kernel Source^${_configOptions[10]}"
-            fi
             
         } | column -ts ^
         echo -en "${_colourDefault}"
@@ -62,27 +53,6 @@ function tredlyHostMenuConfig() {
                 5)
                     # container subnet
                     tredlySelectContainerSubnet
-                ;;
-                6)
-                    # tredly build repo
-                    tredlySelectBuildRepo
-                ;;
-                7)
-                    # tredly build branch
-                    tredlySelectBuildBranch
-                ;;
-                8)
-                    # tredly api repo
-                    tredlySelectAPIURL
-                ;;
-                9)
-                    # tredly api branch
-                    tredlySelectAPIBranch
-                ;;
-                10)
-                    if [[ "${_sourceExists}" == "true" ]]; then
-                        tredlySelectDownloadKernel
-                    fi
                 ;;
                 *)
                     echo "Invalid input \"${_userSelection}\""
