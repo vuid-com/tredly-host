@@ -17,7 +17,6 @@ function tredlyHostMenuConfig() {
         
         echo -en "${_colourOrange}"
         {
-            echo -e "0.^Proceed with Installation^"
             echo -e "1.^External Interface^${_configOptions[1]}"
             echo -e "2.^External IP Address (including CIDR)^${_configOptions[2]}"
             echo -e "3.^External Gateway^${_configOptions[3]}"
@@ -26,10 +25,10 @@ function tredlyHostMenuConfig() {
             
         } | column -ts ^
         echo -en "${_colourDefault}"
-        read -p "Which would you like to change? (or enter 0 to continue) " _userSelection
+        read -p "Which would you like to change? (or enter to continue) " _userSelection
         
         # stop the loop
-        if [[ "${_userSelection}" == "0" ]]; then
+        if [[ -z "${_userSelection}" ]]; then
             continue="false"
         else
             # validate user input
