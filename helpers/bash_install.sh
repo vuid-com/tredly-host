@@ -2,6 +2,8 @@
 
 set -o pipefail
 
+VERSIONNUMBER="0.10.1"
+
 # where to send the logfile
 LOGFILE="/var/log/tredly-install.log"
 
@@ -10,6 +12,7 @@ DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
 source "${DIR}/lib/util.sh"
 source "${DIR}/lib/output.sh"
 source "${DIR}/lib/menuconfig.sh"
+source "${DIR}/lib/config.sh"
 
 # make sure this script is running as root
 cmn_assert_running_as_root
@@ -29,20 +32,29 @@ if [[ ${_vimageInstalled} -gt 0 ]]; then
 fi
 
 ###############################
-
-# set some defaults
 declare -a _configOptions
+# set some defaults
 _configOptions[0]=''
 _configOptions[1]="${_externalInterfaces[0]}"
 _configOptions[2]="$( getInterfaceIP "${_externalInterfaces[0]}" )/$( getInterfaceCIDR "${_externalInterfaces[0]}" )"
 _configOptions[3]="$( getDefaultGateway )"
 _configOptions[4]="${HOSTNAME}"
 _configOptions[5]="10.99.0.0/16"
-_configOptions[6]="https://github.com/tredly/tredly-build.git"
-_configOptions[7]="master"
-_configOptions[8]="https://github.com/tredly/tredly-api.git"
-_configOptions[9]="master"
-_configOptions[10]="${_downloadSource}"
+
+# check if the install config file exists
+if [[ ! -f "${DIR}/conf/install.conf" ]]; then
+    exit_with_error "Could not find conf/install.conf"
+fi
+
+# load the config file
+install_conf_parse "install"
+
+# set locations from the file
+_configOptions[6]="${_CONF_INSTALL[tredlyBuildGit]}"
+_configOptions[7]="${_CONF_INSTALL[tredlyBuildBranch]}"
+_configOptions[8]="${_CONF_INSTALL[tredlyApiGit]}"
+_configOptions[9]="${_CONF_INSTALL[tredlyApiBranch]}"
+_configOptions[10]="${_CONF_INSTALL[downloadKernelSource]}"
 
 # check for a dhcp leases file for this interface
 #if [[ -f "/var/db/dhclient.leases.${_configOptions[1]}" ]]; then
@@ -339,7 +351,7 @@ if [[ ${_exitCode} -eq 0 ]]; then
 else
     e_error "Failed"
 fi
-echo "()"
+
 # initialise tredly
 tredly init
 
@@ -409,9 +421,25 @@ else
 
 fi
 
-
-
 ##########
+
+# use tredly to set network details
+e_note "Setting Host Network"
+tredly config host network "${_configOptions[1]}" "${_configOptions[2]}" "${_configOptions[3]}" > /dev/null 2>&1
+if [[ $? -eq 0 ]]; then
+    e_success "Success"
+else
+    e_error "Failed"
+fi
+
+e_note "Setting Host Hostname"
+tredly config host hostname "${_configOptions[4]}" > /dev/null 2>&1
+if [[ $? -eq 0 ]]; then
+    e_success "Success"
+else
+    e_error "Failed"
+fi
+
 # Enable the cloned interfaces
 e_note "Enabling Cloned Interfaces"
 service netif cloneup
@@ -425,23 +453,6 @@ fi
 # Configure IP on Host to communicate with Containers
 e_note "Configuring bridge1 interface"
 ifconfig bridge1 inet ${_hostPrivateIP} netmask $( cidr2netmask "${CONTAINER_SUBNET_CIDR}" )
-if [[ $? -eq 0 ]]; then
-    e_success "Success"
-else
-    e_error "Failed"
-fi
-
-# use tredly to set network details
-e_note "Setting Host Network"
-tredly config host network "${_configOptions[1]}" "${_configOptions[2]}" "${_configOptions[3]}" > /dev/null 2>&1
-if [[ $? -eq 0 ]]; then
-    e_success "Success"
-else
-    e_error "Failed"
-fi
-
-e_note "Setting Host Hostname"
-tredly config host hostname "${_configOptions[4]}" > /dev/null 2>&1
 if [[ $? -eq 0 ]]; then
     e_success "Success"
 else

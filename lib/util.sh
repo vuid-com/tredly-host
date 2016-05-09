@@ -949,3 +949,29 @@ function getDefaultGateway() {
     netstat -r4n | grep '^default' | awk '{ print $2 }'
 }
 
+
+# checks one version against another. if major or minor versions mismatch then error. Doesnt carea bout hotfix
+function versionCheck() {
+    _version1="${1}"
+    _version2="${2}"
+
+    # extract the major and minor versions from tredly and tredlyfile version
+    local _regex="^([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+)"
+    [[ ${_version1} =~ ${_regex} ]]
+    
+    local __version1Major="${BASH_REMATCH[1]}"
+    local __version1Minor="${BASH_REMATCH[2]}"
+    
+    # extract the major and minor versions from tredlyfile version
+    [[ ${_version2} =~ ${_regex} ]]
+    local _version2Major="${BASH_REMATCH[1]}"
+    local _version2Minor="${BASH_REMATCH[2]}"
+
+    # ensure the major and minor versions match
+    if [[ "${_version1Major}" != "${_version2Major}" ]] || \
+       [[ "${_version1Minor}" != "${_version2Minor}" ]]; then
+            return ${E_ERROR}
+    fi
+    
+    return ${E_SUCCESS}
+}
