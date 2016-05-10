@@ -7,6 +7,7 @@ then
    echo "Please run this installer as root." 1>&2
    exit 1
 fi
+
 # install bash before invoking the bash installer
 pkg install -y bash
 
@@ -19,5 +20,11 @@ then
     echo "Install complete"
     echo "################"
     echo "Please reboot your host for the new kernel and settings to take effect."
+    echo -e "\e[39m"
+else
+    echo -e "\e[35m"
+    echo "################"
+    echo "An error occurred during tredly-host installation."
+    echo "################"
     echo -e "\e[39m"
 fi
