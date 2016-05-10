@@ -372,7 +372,6 @@ else
     e_error "Failed"
 fi
 
-
 if [[ ${_vimageInstalled} -ne 0 ]]; then
     echo "Skipping kernel recompile as this kernel appears to already have VIMAGE compiled."
 else
@@ -382,19 +381,26 @@ else
     # lets compile the kernel for VIMAGE!
 
     # download the source if the user said yes
-    if [[ "${_downloadSource}" == 'y' ]] || [[ "${_downloadSource}" == 'Y' ]]; then
+    if [[ "${_configOptions[10]}" == 'y' ]] || [[ "${_configOptions[10]}" == 'Y' ]]; then
         _thisRelease=$( sysctl -n kern.osrelease | cut -d '-' -f 1 -f 2)
         # download the src file
         fetch http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/${_thisRelease}/src.txz -o /tmp
+        
+        if [[ $? -ne 0 ]]; then
+            exit_with_error "Failed to download src.txz"
+        fi
 
         # move the old source to another dir if it already exists
-        if [[ "${_configOptions[10]}" == "y" ]]; then
+        if [[ -d "/usr/src/sys" ]]; then
             # clean up the old source
             mv /usr/src/sys /usr/src/sys.old
         fi
 
         # unpack new source
         tar -C / -xzf /tmp/src.txz
+        if [[ $? -ne 0 ]]; then
+            exit_with_error "Failed to unpack src.txz"
+        fi
     fi
 
     # copy in the tredly kernel configuration file
@@ -417,6 +423,12 @@ else
     # only install the kernel if the build succeeded
     if [[ $? -eq 0 ]]; then
         make installkernel KERNCONF=TREDLY
+        
+        if [[ $? -ne 0 ]]; then
+            exit_with_error "Failed to install kernel"
+        fi
+    else
+        exit_with_error "Failed to build kernel"
     fi
 
 fi
