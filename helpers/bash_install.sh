@@ -304,6 +304,8 @@ cp ${DIR}/proxy/nginx.conf /usr/local/etc/nginx/
 _exitCode=$(( ${_exitCode} & $? ))
 cp -R ${DIR}/proxy/proxy_pass /usr/local/etc/nginx/
 _exitCode=$(( ${_exitCode} & $? ))
+cp -R ${DIR}/proxy/tredly_error_docs /usr/local/etc/nginx/
+_exitCode=$(( ${_exitCode} & $? ))
 if [[ ${_exitCode} -eq 0 ]]; then
     e_success "Success"
 else
