@@ -103,6 +103,17 @@ fi
 
 ##########
 
+# Enable the cloned interfaces
+e_note "Enabling Cloned Interfaces"
+service netif cloneup
+if [[ $? -eq 0 ]]; then
+    e_success "Success"
+else
+    e_error "Failed"
+fi
+
+##########
+
 if [[ -z "${_configOptions[8]}" ]]; then
     e_note "Skipping Tredly-API"
 else
@@ -458,15 +469,6 @@ fi
 
 e_note "Setting Host Hostname"
 tredly-host config host hostname "${_configOptions[4]}"
-if [[ $? -eq 0 ]]; then
-    e_success "Success"
-else
-    e_error "Failed"
-fi
-
-# Enable the cloned interfaces
-e_note "Enabling Cloned Interfaces"
-service netif cloneup
 if [[ $? -eq 0 ]]; then
     e_success "Success"
 else
