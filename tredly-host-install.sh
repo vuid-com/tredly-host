@@ -60,12 +60,12 @@ for arg in "$@"; do
             echo "Tredly-Host installed."
             #echo -e "\e[38;5;202mNote: Please modify the files in ${CONFDIR} to suit your environment.\e[39m"
             ;;
-        uninstall)
-            echo "Uninstalling Tredly-Host..."
+        #uninstall)
+            #echo "Uninstalling Tredly-Host..."
             # run clean to remove the files
-            clean
-            echo "Tredly-Host Uninstalled."
-            ;;
+            #clean
+            #echo "Tredly-Host Uninstalled."
+            #;;
         clean)
             # do nothing, this is just here to prevent clean being handled as *
             ;;
