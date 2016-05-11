@@ -9,10 +9,9 @@ LOGFILE="/var/log/tredly-install.log"
 
 # load some bash libraries
 DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
-source "${DIR}/lib/util.sh"
-source "${DIR}/lib/output.sh"
-source "${DIR}/lib/menuconfig.sh"
-source "${DIR}/lib/config.sh"
+
+# load the libs
+for f in ${DIR}/lib/*.sh; do source $f; done
 
 # make sure this script is running as root
 cmn_assert_running_as_root
@@ -40,6 +39,8 @@ _configOptions[2]="$( getInterfaceIP "${_externalInterfaces[0]}" )/$( getInterfa
 _configOptions[3]="$( getDefaultGateway )"
 _configOptions[4]="${HOSTNAME}"
 _configOptions[5]="10.99.0.0/16"
+API_GUI_CONTAINER="10.99.0.253"
+
 
 # check if the install config file exists
 if [[ ! -f "${DIR}/conf/install.conf" ]]; then
@@ -80,7 +81,7 @@ CONTAINER_SUBNET_CIDR="$( rcut "${_configOptions[5]}" '/')"
 _hostPrivateIP=$( get_last_usable_ip4_in_network "${CONTAINER_SUBNET_NET}" "${CONTAINER_SUBNET_CIDR}" )
 
 ####
-e_header "Tredly-Host Installation"
+e_header "Tredly Installation"
 
 ##########
 
@@ -99,7 +100,7 @@ if [[ $? -eq 0 ]]; then
 else
     e_error "Failed"
 fi
-    
+
 ##########
 
 if [[ -z "${_configOptions[8]}" ]]; then
@@ -328,9 +329,20 @@ else
 fi
 
 ##########
+e_note "Installing Tredly-Host"
+
+# install tredly-host
+${DIR}/tredly-host-install.sh clean install
+if [[ $? -eq 0 ]]; then
+    e_success "Success"
+else
+    e_error "Failed"
+fi
+
+##########
 
 # Get tredly-build and install it
-e_note "Configuring Tredly-build"
+e_note "Installing Tredly-build"
 _exitCode=1
 cd /tmp
 # if the directory for tredly-build already exists, then delete it and start again
@@ -346,9 +358,7 @@ done
 
 cd /tmp/tredly-build
 ./tredly.sh install clean
-_exitCode=$?
-_exitCode=$(( ${_exitCode} & $? ))
-if [[ ${_exitCode} -eq 0 ]]; then
+if [[ $? -eq 0 ]]; then
     e_success "Success"
 else
     e_error "Failed"
@@ -439,7 +449,7 @@ fi
 
 # use tredly to set network details
 e_note "Setting Host Network"
-tredly config host network "${_configOptions[1]}" "${_configOptions[2]}" "${_configOptions[3]}" > /dev/null 2>&1
+tredly-host config host network "${_configOptions[1]}" "${_configOptions[2]}" "${_configOptions[3]}"
 if [[ $? -eq 0 ]]; then
     e_success "Success"
 else
@@ -447,7 +457,7 @@ else
 fi
 
 e_note "Setting Host Hostname"
-tredly config host hostname "${_configOptions[4]}" > /dev/null 2>&1
+tredly-host config host hostname "${_configOptions[4]}"
 if [[ $? -eq 0 ]]; then
     e_success "Success"
 else
@@ -463,22 +473,24 @@ else
     e_error "Failed"
 fi
 
-# now that everything is installed, set up the networking
-# Configure IP on Host to communicate with Containers
-e_note "Configuring bridge1 interface"
-ifconfig bridge1 inet ${_hostPrivateIP} netmask $( cidr2netmask "${CONTAINER_SUBNET_CIDR}" )
+e_note "Setting Container Subnet"
+tredly-host config container subnet "${_configOptions[5]}"
 if [[ $? -eq 0 ]]; then
     e_success "Success"
 else
     e_error "Failed"
 fi
 
-e_note "Setting Container Subnet"
-tredly config container subnet "${_configOptions[5]}" > /dev/null 2>&1
-if [[ $? -eq 0 ]]; then
-    e_success "Success"
-else
-    e_error "Failed"
+# if tredly api is enabled then add to whitelist
+if [[ -n "${_configOptions[8]}" ]]; then
+    e_note "Whitelisting IP addresses for API"
+    tredly-host config firewall addAPIwhitelist ${API_GUI_CONTAINER}
+    
+    if [[ $? -eq 0 ]]; then
+        e_success "Success"
+    else
+        e_error "Failed"
+    fi
 fi
 
 #####
