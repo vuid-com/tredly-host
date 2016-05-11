@@ -16,12 +16,12 @@ SCRIPTSDIR="${PREFIX}/BINDIR"
 #set -x
 # cleans/uninstalls tredly
 function clean() {
-    # remove any installed files
+    # TODO: remove any installed files
     #${RM} -rf "${FILESDIR}"
     #${RM} -f "${BINDIR}/tredly-host"
     #${RM} -f "${LIBDIR}/"*
     #${RM} -f "${COMMANDSDIR}/"*
-    echo "TODO"
+    echo ""
 }
 
 # returns the directory that the files have been downloaded to
@@ -58,7 +58,7 @@ for arg in "$@"; do
             ${INSTALL} -c "${FILESSOURCE}/commands/"* "${COMMANDSDIR}"
 
             echo "Tredly-Host installed."
-            echo -e "\e[38;5;202mNote: Please modify the files in ${CONFDIR} to suit your environment.\e[39m"
+            #echo -e "\e[38;5;202mNote: Please modify the files in ${CONFDIR} to suit your environment.\e[39m"
             ;;
         uninstall)
             echo "Uninstalling Tredly-Host..."
