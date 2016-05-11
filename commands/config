@@ -53,7 +53,7 @@ case "${_SUBCOMMANDS[0]}" in
                 fi
                 
                 # add the ipfw rule for tredly-api
-                ipfw_add_persistent_table_member "" "5" "${_SUBCOMMANDS[2]}"
+                ipfw_add_persistent_table_member "" "20" "${_SUBCOMMANDS[2]}"
                 if [[ $? -eq 0 ]]; then
                     e_success "Success"
                 else

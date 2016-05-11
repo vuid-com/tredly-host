@@ -19,7 +19,6 @@ cmn_assert_running_as_root
 # get a list of external interfaces
 IFS=$'\n' declare -a _externalInterfaces=($( getExternalInterfaces ))
 
-
 # Do checks at the start so the user can walk away while installation happens
 _vimageInstalled=$( sysctl kern.conftxt | grep '^options[[:space:]]VIMAGE$' | wc -l )
 if [[ ${_vimageInstalled} -gt 0 ]]; then
@@ -103,13 +102,15 @@ fi
 
 ##########
 
-# Enable the cloned interfaces
-e_note "Enabling Cloned Interfaces"
-service netif cloneup
-if [[ $? -eq 0 ]]; then
-    e_success "Success"
-else
-    e_error "Failed"
+# if vimage is installed, enable cloned interfaces
+if [[ ${_vimageInstalled} -ne 0 ]]; then
+    e_note "Enabling Cloned Interfaces"
+    service netif cloneup
+    if [[ $? -eq 0 ]]; then
+        e_success "Success"
+    else
+        e_error "Failed"
+    fi
 fi
 
 ##########
@@ -175,14 +176,21 @@ pkg install -y rsync | tee -a "${LOGFILE}"
 _exitCode=$(( ${PIPESTATUS[0]} & $? ))
 pkg install -y openntpd | tee -a "${LOGFILE}"
 _exitCode=$(( ${PIPESTATUS[0]} & $? ))
-pkg install -y bash | tee -a "${LOGFILE}"
-_exitCode=$(( ${PIPESTATUS[0]} & $? ))
 pkg install -y git | tee -a "${LOGFILE}"
 _exitCode=$(( ${PIPESTATUS[0]} & $? ))
+if [[ ${_exitCode} -ne 0 ]]; then
+    exit_with_error "Failed to download git"
+fi
 pkg install -y nginx | tee -a "${LOGFILE}"
 _exitCode=$(( ${PIPESTATUS[0]} & $? ))
+if [[ ${_exitCode} -ne 0 ]]; then
+    exit_with_error "Failed to download Nginx"
+fi
 pkg install -y unbound | tee -a "${LOGFILE}"
 _exitCode=$(( ${PIPESTATUS[0]} & $? ))
+if [[ ${_exitCode} -ne 0 ]]; then
+    exit_with_error "Failed to download Unbound"
+fi
 if [[ ${_exitCode} -eq 0 ]]; then
     e_success "Success"
 else
@@ -353,12 +361,12 @@ fi
 ##########
 
 # Get tredly-build and install it
-e_note "Installing Tredly-build"
+e_note "Installing Tredly-Build"
 _exitCode=1
 cd /tmp
 # if the directory for tredly-build already exists, then delete it and start again
 if [[ -d "/tmp/tredly-build" ]]; then
-    echo "Cleaning previously downloaded Tredly-build"
+    echo "Cleaning previously downloaded Tredly-Build"
     rm -rf /tmp/tredly-build
 fi
 
@@ -396,18 +404,31 @@ else
 fi
 
 if [[ ${_vimageInstalled} -ne 0 ]]; then
-    echo "Skipping kernel recompile as this kernel appears to already have VIMAGE compiled."
+    e_success "Skipping kernel recompile as this kernel appears to already have VIMAGE compiled."
 else
-    echo "Recompiling kernel as this kernel does not have VIMAGE built in"
-    echo "Please note this will take some time."
+    e_note "Recompiling kernel as this kernel does not have VIMAGE built in"
+    e_note "Please note this will take some time."
 
     # lets compile the kernel for VIMAGE!
 
-    # download the source if the user said yes
-    if [[ "${_configOptions[10]}" == 'y' ]] || [[ "${_configOptions[10]}" == 'Y' ]]; then
+    # download the source if the user said yes or the source doesnt exist
+    if [[ "${_configOptions[10]}" == 'y' ]] || [[ "${_configOptions[10]}" == 'Y' ]] || [[ ! -d '/usr/src/sys' ]]; then
         _thisRelease=$( sysctl -n kern.osrelease | cut -d '-' -f 1 -f 2)
-        # download the src file
-        fetch http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/${_thisRelease}/src.txz -o /tmp
+        
+        # download manifest file to validate src.txz
+        # TODO uncomment when validation implemented
+        #fetch http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/${_thisRelease}/MANIFEST -o /tmp
+        
+        # if we have downlaoded src.txz for tredly then use that
+        if [[ -f /tredly/downloads/${_thisRelease}/src.txz ]]; then
+            e_note "Copying pre-downloaded src.txz"
+            
+            cp /tredly/downloads/${_thisRelease}/src.txz /tmp
+        else
+            # otherwise download the src file
+            fetch http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/${_thisRelease}/src.txz -o /tmp
+        fi
+        # TODO: validate src.txz against MANIFEST
         
         if [[ $? -ne 0 ]]; then
             exit_with_error "Failed to download src.txz"

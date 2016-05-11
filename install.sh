@@ -1,5 +1,7 @@
 #!/bin/sh
 
+LOGFILE="/var/log/tredly-install.log"
+
 # make sure this user is root
 euid=$( id -u )
 if test $euid != 0
@@ -8,8 +10,17 @@ then
    exit 1
 fi
 
+# force an update on pkg in case the cache is out of date and bash install fails
+pkg update -f
+
 # install bash before invoking the bash installer
 pkg install -y bash
+
+if test $? != 0
+then
+    echo "Failed to Download Bash"
+    exit 1
+fi
 
 ./helpers/bash_install.sh
 
